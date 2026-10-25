@@ -1,6 +1,5 @@
 :root {
-  --bg: #f6f7f9;
-  --card: #ffffff;
+  --bg: #f6f7f9;  --card: #ffffff;
   --ink: #1c2128;
   --muted: #6b7280;
   --line: #e5e7eb;
@@ -10,7 +9,24 @@
   --amber-bg: #fdf3d7;  --amber-fg: #8a6100;  --amber-line: #ecd9a0;
   --accent: #2563eb;
 }
+:root[data-theme="dark"] {
+  --bg: #0f1216;
+  --card: #171b21;
+  --ink: #e8eaed;
+  --muted: #9aa3af;
+  --line: #2a313a;
+  --green-bg: #10301f;  --green-fg: #5fd69a;  --green-line: #1f5a3a;
+  --red-bg:   #3a1216;  --red-fg:   #f28b8b;  --red-line:   #6e232a;
+  --gray-bg:  #23272e;  --gray-fg:  #9aa3af;  --gray-line:  #343b45;
+  --amber-bg: #37280a;  --amber-fg: #e8c268;  --amber-line: #5f4718;
+  --accent: #60a5fa;
+}
+:root { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
 * { box-sizing: border-box; }
+:root { color-scheme: light dark; }
+body { background: var(--bg); color: var(--ink); }
 body {
   margin: 0 auto; padding: 24px 16px 40px; max-width: 900px;
   font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -36,7 +52,7 @@ header h1 { font-size: 1.45rem; margin: 0 0 4px; }
 textarea {
   width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
   font: 14px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  resize: vertical; min-height: 130px; background: #fcfcfd;
+  resize: vertical; min-height: 130px; background: var(--gray-bg); color: var(--ink);
 }
 textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 

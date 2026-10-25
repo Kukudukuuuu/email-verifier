@@ -48,6 +48,17 @@ function setError(msg) {
   el.textContent = msg || "";
 }
 
+function setTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem("email-checker-theme", theme); } catch { /* ignore */ }
+}
+
+function toggleTheme() {
+  const next = (document.documentElement.dataset.theme === "dark") ? "light" : "dark";
+  setTheme(next);
+  $("#theme-toggle").textContent = next === "dark" ? "☀️" : "🌙";
+}
+
 async function loadEnvironment() {
   try {
     const res = await fetch("/api/health");
@@ -152,6 +163,10 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#download").addEventListener("click", downloadCsv);
   $("#fill-sample").addEventListener("click", () => { $("#emails").value = SAMPLE.join("\n"); updateCounter(); setError(""); });
   $("#emails").addEventListener("input", updateCounter);
+  $("#theme-toggle").addEventListener("click", toggleTheme);
   updateCounter();
+  const stored = (() => { try { return localStorage.getItem("email-checker-theme"); } catch { return null; } })();
+  setTheme(stored === "dark" ? "dark" : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  $("#theme-toggle").textContent = (document.documentElement.dataset.theme === "dark") ? "☀️" : "🌙";
   loadEnvironment();
 });
