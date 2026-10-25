@@ -1,5 +1,4 @@
 
-# external_verifier.py
 import os
 import requests
 
@@ -8,6 +7,7 @@ API_URL = "https://emailreputation.abstractapi.com/v1"
 
 def verify_with_api(email):
     api_key = os.getenv("ABSTRACT_API_KEY")
+
     if not api_key:
         return None
 
@@ -24,7 +24,6 @@ def verify_with_api(email):
         data = response.json()
 
     except (requests.RequestException, ValueError):
-        # API unavailable, rate-limited, or invalid response.
         return None
 
     delivery = data.get("email_deliverability") or {}
@@ -38,7 +37,6 @@ def verify_with_api(email):
 
     notes = ["Checked using Abstract Email Reputation"]
 
-    # Definitive negative signals.
     if (
         format_valid is False
         or mx_valid is False
@@ -50,16 +48,13 @@ def verify_with_api(email):
             "notes": notes,
         }
 
-    # Catch-all servers may accept addresses without
-    # confirming that a specific mailbox exists.
     if catch_all is True:
         return {
             "verdict": "unknown",
-            "reason": "The domain is catch-all; this specific mailbox is unconfirmed.",
+            "reason": "Catch-all domain; individual mailbox is unconfirmed.",
             "notes": notes,
         }
 
-    # Require positive signals before claiming likely delivery.
     if (
         status == "deliverable"
         and format_valid is True
