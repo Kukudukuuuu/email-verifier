@@ -1,43 +1,74 @@
-from email_validator import (
-    validate_email,
-    EmailNotValidError,
-    EmailUndeliverableError,
-)
+
+# emailip.py
+import os
+import requests
+
+API_URL = "https://emailverifier.reoon.com/api/v1/verify"
 
 
 def verify_with_api(email):
+    api_key = os.getenv("REOON_API_KEY")
+
+    if not api_key:
+        return None
+
     try:
-        result = validate_email(
-            email,
-            check_deliverability=True,
+        response = requests.get(
+            API_URL,
+            params={
+                "email": email,
+                "key": api_key,
+                "mode": "power",
+            },
+            timeout=(5, 120),
         )
+        response.raise_for_status()
+        data = response.json()
 
-        return {
-            "verdict": "unknown",
-            "reason": (
-                "Email syntax is valid and domain mail routing "
-                "is available. Individual mailbox is unconfirmed."
-            ),
-            "notes": ["Checked using email-validator DNS checks"],
-        }
+    except (requests.RequestException, ValueError):
+        # Keep the app working if Reoon is unavailable.
+        return None
 
-    except EmailUndeliverableError as exc:
-        return {
-            "verdict": "likely to bounce",
-            "reason": str(exc),
-            "notes": ["Domain mail routing check failed"],
-        }
+    status = str(data.get("status", "")).lower()
+    notes = ["Verified using Reoon Power mode"]
 
-    except EmailNotValidError as exc:
-        return {
-            "verdict": "likely to bounce",
-            "reason": str(exc),
-            "notes": ["Email syntax or domain validation failed"],
-        }
+    if status == "error":
+        return None
 
-    except Exception:
-        return {
-            "verdict": "unknown",
-            "reason": "DNS validation could not be completed.",
-            "notes": [],
-        }
+    if data.get("is_valid_syntax") is False:
+        verdict = "likely to bounce"
+        reason = "Reoon reports invalid email syntax."
+
+    elif data.get("is_catch_all") is True or status == "catch_all":
+        verdict = "unknown"
+        reason = "The domain is catch-all; this mailbox is unconfirmed."
+
+    elif (
+        status == "safe"
+        and data.get("is_deliverable") is True
+        and data.get("is_safe_to_send") is True
+    ):
+        verdict = "likely to be delivered"
+        reason = "Reoon reports the address as safe and deliverable."
+
+    elif status in ("invalid", "disabled"):
+        verdict = "likely to bounce"
+        reason = f"Reoon classified the address as {status}."
+
+    elif status == "disposable":
+        verdict = "unknown"
+        reason = "Reoon identifies a disposable address."
+
+    elif status in ("spamtrap", "inbox_full"):
+        verdict = "likely to bounce"
+        reason = f"Reoon flagged the address as {status}."
+
+    else:
+        verdict = "unknown"
+        reason = "Reoon could not conclusively verify this address."
+
+    return {
+        "verdict": verdict,
+        "reason": reason,
+        "notes": notes,
+    }
