@@ -14,7 +14,7 @@ import time
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
-
+from emailip import verify_with_api
 from flask import Flask, jsonify, render_template, request
 
 import checker
@@ -53,6 +53,32 @@ def _rate_ok(ip: str) -> bool:
             return False
         bucket.append(now)
         return True
+
+
+def _verify_one(email, do_smtp, cap_detail, catch_all):
+    # Run your existing verification first.
+    result = checker.verify_address(
+        email,
+        HELO_DOMAIN,
+        MAIL_FROM,
+        do_smtp,
+        None if do_smtp else cap_detail,
+        catch_all,
+    )
+
+    # Only use the external API if SMTP is blocked
+    # and the existing checker cannot reach a conclusion.
+    if not do_smtp and result.get("verdict") == checker.UNKNOWN:
+        api_result = verify_with_api(email)
+
+        if api_result is not None:
+            result["verdict"] = api_result["verdict"]
+            result["reason"] = api_result["reason"]
+            result.setdefault("notes", []).extend(
+                api_result.get("notes", [])
+            )
+
+    return result
 
 
 @app.get("/")
@@ -106,12 +132,24 @@ def api_verify():
     catch_all = payload.get("catch_all_test", True) is not False
     blocked_note = None if do_smtp else cap_detail
 
+
     with _pool_lock:
         futures = [
-            _pool.submit(checker.verify_address, email, HELO_DOMAIN, MAIL_FROM, do_smtp, blocked_note, catch_all)
+            _pool.submit(
+                _verify_one,
+                email,
+                do_smtp,
+                cap_detail,
+                catch_all,
+            )
             for email in cleaned
         ]
+
     results = [f.result() for f in futures]
+
+
+results = [f.result() for f in futures]
+
 
     summary = {checker.DELIVERABLE: 0, checker.BOUNCE: 0, checker.UNKNOWN: 0}
     for r in results:
