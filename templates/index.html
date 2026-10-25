@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email deliverability checker</title>
+  <meta name="description" content="Paste a list of email addresses and see whether each is likely to be delivered, likely to bounce, or unknown.">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header>
+  <h1>✉️ Email deliverability checker</h1>
+  <p class="subtitle">Paste a list of addresses (one per line). Each gets a verdict:
+    <span class="tag tag-green">likely to be delivered</span>,
+    <span class="tag tag-red">likely to bounce</span>, or
+    <span class="tag tag-gray">unknown</span>.
+  </p>
+  <p id="env-banner" class="banner" hidden></p>
+</header>
+
+<main>
+  <section class="card">
+    <label for="emails" class="label">Email addresses — one per line (max 50 per batch)</label>
+    <textarea id="emails" rows="7" spellcheck="false"
+      placeholder="alice@example.com&#10;bob.surname@gmail.com&#10;jane@somewhere.invalid"></textarea>
+    <div class="row">
+      <span id="counter" class="muted">0 addresses</span>
+      <span class="spacer"></span>
+      <button id="fill-sample" type="button" class="btn-ghost">Load sample list</button>
+      <button id="clear" type="button" class="btn-ghost">Clear</button>
+      <button id="check" type="button" class="btn-primary">Check deliverability</button>
+    </div>
+    <p id="error" class="error" hidden></p>
+  </section>
+
+  <section id="results-section" class="card" hidden>
+    <div class="row header-row">
+      <h2 id="summary">Results</h2>
+      <span class="spacer"></span>
+      <button id="download" type="button" class="btn-ghost">Download CSV</button>
+    </div>
+    <div id="legend" class="muted small">
+      Verdicts: <span class="tag tag-green">likely to be delivered</span>
+      · <span class="tag tag-red">likely to bounce</span>
+      · <span class="tag tag-gray">unknown</span>
+      · <span class="tag tag-yellow">disposable inbox</span> (hint only)
+    </div>
+    <table id="results">
+      <thead>
+        <tr><th>Address</th><th>Verdict</th><th>Why</th><th></th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <details class="explain">
+      <summary>Why would a result ever be “unknown”? …</summary>
+      <ul>
+        <li><strong>Greylisting / rate limits.</strong> Many servers answer a first-contact probe with a
+            temporary 4xx “try later” instead of a verdict.</li>
+        <li><strong>Catch-all domains.</strong> Some domains accept <em>every</em> local part, so the
+            server's “OK” cannot prove the specific mailbox exists. The checker probes with a random
+            name to detect this and reports those unknown.</li>
+        <li><strong>Refused verification.</strong> Big providers (Yahoo, Apple, Zoho…) often reject
+            recipient verification on purpose, or bounce the probe for IP-reputation/policy reasons.</li>
+        <li><strong>Environment limits.</strong> Hosting platforms that block outbound SMTP (port 25)
+            reduce this checker to syntax + DNS; the banner at the top tells you if that applies here.</li>
+      </ul>
+      <p class="small muted">No message is ever sent: the SMTP session stops right after RCPT&nbsp;TO and always
+         quits before DATA. Results are best-effort estimates, not guarantees — servers can still bounce
+         accepted mail later.</p>
+    </details>
+  </section>
+</main>
+
+<footer class="muted small">
+  Local checks: syntax → DNS MX → disposable-domain hint → SMTP RCPT probe (never sends mail).
+  See the README for hosting notes and limitations.
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
