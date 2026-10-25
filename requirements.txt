@@ -2,3 +2,4 @@ flask>=3.0
 dnspython>=2.6
 gunicorn>=22
 requests>=2.32
+email-validator>=2.2
